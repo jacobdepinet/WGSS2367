@@ -1,0 +1,75 @@
+---
+title: "WGSS FINAL PROJECT"
+author: "Jacob Depinet.23"
+date: "5/3/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+fulldata <- read_excel("C:\\Users\\jdepi\\Downloads\\ICPSR_35536-V2 (2)\\ICPSR_35536\\DS0001\\35536-0001-Data.xlsx")
+```
+
+```{r}
+#compose of desired variables
+desdata <- select(fulldata, SEX, RACE, SOCFREND, NATFAREY, POSTLIFE, TRUST, PCLIT, FEWORK, FEPOL, USINTL)
+```
+
+```{r}
+#aggregate on race and gender
+RaceAndGender <- c()
+for(i in 1:nrow(desdata)){
+  if(desdata[i,"RACE"] == 1 & desdata[i, "SEX"] == 1)
+    {RaceAndGender <- append(RaceAndGender, "WHITE MEN")}
+  else if(desdata[i,"RACE"] == 2 & desdata[i, "SEX"] == 1)
+    {RaceAndGender <- append(RaceAndGender, "BLACK MEN")}
+  else if(desdata[i,"RACE"] == 1 & desdata[i, "SEX"] == 2)
+    {RaceAndGender <- append(RaceAndGender, "WHITE WOMEN")}
+  else if(desdata[i,"RACE"] == 2 & desdata[i, "SEX"] == 2)
+    {RaceAndGender <- append(RaceAndGender, "BLACK WOMEN")}
+  else
+    {RaceAndGender <- append(RaceAndGender, "OTHER")}
+}
+
+#Add to data set
+desdata$RaceAndGender <- RaceAndGender
+
+#Remove others
+finaldata <- subset(desdata, RaceAndGender != "OTHER")
+```
+
+
+```{r}
+#PCA 
+pca.fit <- finaldata %>% dplyr::select(-c(1,2,11)) %>% prcomp(scale = TRUE)
+pca.fit
+finaldata <- cbind(finaldata, pca.fit$x)
+```
+
+```{r}
+ggplot(finaldata, aes(x = RaceAndGender, y= PC5)) + geom_boxplot() + ggtitle("Social and Humanitarian Beliefs vs. Race and Gender") + ylab("Social and Humanitarian Beliefs") + xlab("Race and Gender")
+```
+```{r}
+pclm <- lm(PC5 ~ RaceAndGender, data = finaldata)
+summary(pclm)
+```
+
+```{r}
+ggplot(subset(finaldata, !(SOCFREND %in% c(-2, 8,9))), aes(x = RaceAndGender, y= SOCFREND)) + geom_boxplot() + ggtitle("Frequency of Socializing with Friends vs. Race and Gender") + ylab("Frequency of Socializing with Friends") + xlab("Race and Gender")
+
+```
+
+```{r}
+ggplot(subset(finaldata, !(POSTLIFE %in% c(0, 8,9))), aes(x = RaceAndGender, y= POSTLIFE)) + geom_boxplot() + ggtitle("Belief in Afterlife vs. Race and Gender") + ylab("Belief in Afterlife") + xlab("Race and Gender")
+```
+
